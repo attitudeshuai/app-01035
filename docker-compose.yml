@@ -1,0 +1,9 @@
+services:
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: parking-system
+    stdin_open: true
+    tty: true
+    restart: "no"

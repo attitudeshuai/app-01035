@@ -6,9 +6,40 @@
 
 #include <iostream>
 #include <cstdlib>
+#include <string>
+#include <iomanip>
 #include "ParkingLot.h"
 
 using namespace std;
+
+struct AppConfig {
+    int capacity;
+    double feePerHour;
+};
+
+static AppConfig loadConfig() {
+    AppConfig cfg;
+    cfg.capacity = 100;
+    cfg.feePerHour = 5.0;
+
+    const char* envCapacity = getenv("PARKING_CAPACITY");
+    if (envCapacity != nullptr) {
+        int val = atoi(envCapacity);
+        if (val > 0) {
+            cfg.capacity = val;
+        }
+    }
+
+    const char* envFee = getenv("PARKING_FEE_PER_HOUR");
+    if (envFee != nullptr) {
+        double val = atof(envFee);
+        if (val > 0) {
+            cfg.feePerHour = val;
+        }
+    }
+
+    return cfg;
+}
 
 // 跨平台清屏
 void clearScreen() {
@@ -47,7 +78,13 @@ void showMenu() {
 }
 
 int main() {
-    ParkingLot parkingLot(100, 5.0);  // 100个车位，每小时5元
+    AppConfig cfg = loadConfig();
+    cout << "=== 停车场管理系统 ===" << endl;
+    cout << "配置信息：车位容量 " << cfg.capacity << " 个，每小时费率 " << fixed << setprecision(2) << cfg.feePerHour << " 元" << endl;
+    cout << "（可通过环境变量 PARKING_CAPACITY 和 PARKING_FEE_PER_HOUR 调整）" << endl;
+    cout << endl;
+
+    ParkingLot parkingLot(cfg.capacity, cfg.feePerHour);
     char choice;
 
     while (true) {

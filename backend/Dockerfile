@@ -1,33 +1,25 @@
-# 停车场管理系统 - C++ 后端
-# 跨平台支持 ARM 和 X86
-
-# 使用相同的基础镜像进行构建和运行，避免 GLIBC 版本不兼容
 FROM gcc:13-bookworm AS builder
 
-WORKDIR /app
+WORKDIR /build
 
-# 复制源代码
+RUN apt-get update && apt-get install -y cmake && rm -rf /var/lib/apt/lists/*
+
+COPY CMakeLists.txt ./
 COPY src/ ./src/
 
-# 静态链接编译，避免运行时依赖问题（多文件编译）
-RUN g++ -std=c++17 -O2 -static-libgcc -static-libstdc++ -I./src \
-    -o parking_system \
-    src/main.cpp \
-    src/ParkingLot.cpp \
-    src/ParkingLot_Sort.cpp \
-    src/ParkingLot_Search.cpp
+RUN cmake -B build -DCMAKE_BUILD_TYPE=Release && \
+    cmake --build build -j$(nproc)
 
-# 运行阶段 - 使用相同的基础镜像
 FROM debian:bookworm
 
 WORKDIR /app
 
-# 设置时区为北京时间
 ENV TZ=Asia/Shanghai
 RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
 
-# 从构建阶段复制可执行文件
-COPY --from=builder /app/parking_system .
+ENV PARKING_CAPACITY=100
+ENV PARKING_FEE_PER_HOUR=5.0
 
-# 设置入口点 - 使用 tail 保持容器运行
-CMD ["tail", "-f", "/dev/null"]
+COPY --from=builder /build/build/parking_system .
+
+CMD ["./parking_system"]

@@ -6,9 +6,32 @@
 
 #include <iostream>
 #include <cstdlib>
+#include <string>
 #include "ParkingLot.h"
 
 using namespace std;
+
+static int getEnvInt(const char* name, int defaultValue) {
+    const char* val = getenv(name);
+    if (val == nullptr) return defaultValue;
+    try {
+        int v = stoi(val);
+        return v > 0 ? v : defaultValue;
+    } catch (...) {
+        return defaultValue;
+    }
+}
+
+static double getEnvDouble(const char* name, double defaultValue) {
+    const char* val = getenv(name);
+    if (val == nullptr) return defaultValue;
+    try {
+        double v = stod(val);
+        return v >= 0 ? v : defaultValue;
+    } catch (...) {
+        return defaultValue;
+    }
+}
 
 // 跨平台清屏
 void clearScreen() {
@@ -47,7 +70,16 @@ void showMenu() {
 }
 
 int main() {
-    ParkingLot parkingLot(100, 5.0);  // 100个车位，每小时5元
+    int capacity = getEnvInt("PARKING_CAPACITY", 100);
+    double feePerHour = getEnvDouble("PARKING_FEE_PER_HOUR", 5.0);
+
+    cout << "============================================" << endl;
+    cout << "          停 车 场 管 理 系 统              " << endl;
+    cout << "============================================" << endl;
+    cout << "配置参数: 容量=" << capacity << "个车位, 费率=" << feePerHour << "元/小时" << endl;
+    cout << "============================================" << endl;
+
+    ParkingLot parkingLot(capacity, feePerHour);
     char choice;
 
     while (true) {

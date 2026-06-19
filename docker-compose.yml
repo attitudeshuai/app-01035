@@ -7,3 +7,6 @@ services:
     stdin_open: true
     tty: true
     restart: "no"
+    environment:
+      PARKING_CAPACITY: ${PARKING_CAPACITY:-100}
+      PARKING_FEE_PER_HOUR: ${PARKING_FEE_PER_HOUR:-5.0}

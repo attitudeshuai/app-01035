@@ -1,50 +1,81 @@
 # 停车场管理系统
 
+基于顺序表实现的车辆信息管理控制台程序。构建系统统一使用 **CMake**，源文件清单只需在 `CMakeLists.txt` 一处维护（实际通过 `file(GLOB ...)` 自动收集 `src/` 下的源文件，新增文件无需任何同步）。
+
 ## How to Run
 
-### 方式一：Visual Studio 2022 运行（推荐）
-
-1. 双击 `backend/ParkingSystem.sln` 打开解决方案
-2. 按 F5 运行（或 Ctrl+F5 无调试运行）
-
-### 方式二：Docker 运行
+### 方式一：Docker（推荐，开箱即用）
 
 ```bash
-# 构建并启动
-docker-compose up --build -d
+# 构建并启动；容器启动后程序直接运行，无需再 docker exec
+docker-compose run --rm backend
 
-# 进入交互式终端运行程序
-docker exec -it parking-system ./parking_system
-
-# 停止容器
-docker-compose down
+# 或者使用 docker 直接运行
+docker build -t parking-system ./backend
+docker run --rm -it parking-system
 ```
 
-### 方式三：命令行编译运行
+业务参数（车位容量、每小时费率）通过环境变量配置，无需改代码：
 
 ```bash
-# Windows (MinGW)
-cd backend
-g++ -std=c++17 -I./src -o parking_system.exe src/main.cpp src/ParkingLot.cpp src/ParkingLot_Sort.cpp src/ParkingLot_Search.cpp
-parking_system.exe
+docker run --rm -it \
+  -e PARKING_CAPACITY=200 \
+  -e PARKING_FEE_PER_HOUR=8.0 \
+  parking-system
+```
 
+也可在 [docker-compose.yml](docker-compose.yml) 的 `environment` 段中集中配置。
+
+### 方式二：本地 CMake 构建
+
+```bash
+cd backend
+cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
+cmake --build build --parallel
+
+# 运行（Linux / macOS）
+./build/parking_system
+
+# 运行（Windows，多配置生成器）
+./build/Release/parking_system.exe
+```
+
+通过环境变量自定义业务参数：
+
+```bash
 # Linux / macOS
-cd backend
-g++ -std=c++17 -I./src -o parking_system src/main.cpp src/ParkingLot.cpp src/ParkingLot_Sort.cpp src/ParkingLot_Search.cpp
-./parking_system
+PARKING_CAPACITY=200 PARKING_FEE_PER_HOUR=8.0 ./build/parking_system
+
+# Windows PowerShell
+$env:PARKING_CAPACITY=200; $env:PARKING_FEE_PER_HOUR=8.0; ./build/Release/parking_system.exe
 ```
 
-## Services
+### 方式三：Visual Studio 2022（使用 CMake 工程）
 
-| 服务 | 说明 | 端口 |
-|------|------|------|
-| backend | C++ 停车场管理系统 | 控制台应用 |
+VS 2022 原生支持 CMake：菜单选择 **文件 → 打开 → CMake...**，选中 `backend/CMakeLists.txt` 即可。已提供 [CMakePresets.json](backend/CMakePresets.json) 内置 `default` / `debug` / `msvc-x64` 三种预设。
+
+> 旧的 `.sln` / `.vcxproj` 已移除。源文件清单只在 `CMakeLists.txt` 一处维护，新增/删除 `src/*.cpp` 后重新配置即可，无需手动同步多个工程文件。
+
+## 配置项
+
+| 环境变量 | 默认值 | 说明 |
+|---|---|---|
+| `PARKING_CAPACITY` | `100` | 停车场最大容量（车位数） |
+| `PARKING_FEE_PER_HOUR` | `5.0` | 每小时收费标准（元） |
+| `TZ` | `Asia/Shanghai` | 时区（仅容器） |
+
+## CI
+
+GitHub Actions 工作流见 [.github/workflows/ci.yml](.github/workflows/ci.yml)，包含：
+
+- **build**：在 Ubuntu 与 Windows 上用 CMake 构建并做冒烟测试，上传可执行文件作为 artifact。
+- **docker**：构建 Docker 镜像并验证 `ENTRYPOINT` 启动后程序可直接运行。
 
 ## 测试账号
 
 本系统为控制台应用，无需登录账号。
 
-启动后输入 `0` 可添加5条测试数据：
+启动后输入 `0` 可添加 5 条测试数据：
 - 京A12345、沪B67890、粤C11111、苏D22222、浙E33333
 
 ## 题目内容
@@ -82,7 +113,8 @@ g++ -std=c++17 -I./src -o parking_system src/main.cpp src/ParkingLot.cpp src/Par
 
 ### 收费标准
 
-- 默认每小时 5 元
+- 默认每小时 5 元（可通过 `PARKING_FEE_PER_HOUR` 调整）
+- 默认容量 100 个车位（可通过 `PARKING_CAPACITY` 调整）
 - 费用 = 停车时长（分钟）/ 60 × 每小时费率
 
 ---
@@ -92,21 +124,19 @@ g++ -std=c++17 -I./src -o parking_system src/main.cpp src/ParkingLot.cpp src/Par
 ```
 ├── backend/
 │   ├── src/
-│   │   ├── main.cpp              # 主程序入口
+│   │   ├── main.cpp              # 主程序入口（读取环境变量配置）
 │   │   ├── Vehicle.h             # 车辆结构体定义
 │   │   ├── ParkingLot.h          # 停车场类声明
 │   │   ├── ParkingLot.cpp        # 停车场类基本操作实现
 │   │   ├── ParkingLot_Sort.cpp   # 排序算法实现
 │   │   └── ParkingLot_Search.cpp # 查找算法实现
-│   ├── ParkingSystem.sln         # VS2022 解决方案文件
-│   ├── ParkingSystem.vcxproj     # VS2022 项目文件
-│   ├── ParkingSystem.vcxproj.filters  # VS2022 筛选器文件
-│   └── Dockerfile                # Docker 构建文件
-├── docker-compose.yml            # Docker Compose 配置
+│   ├── CMakeLists.txt            # 统一构建入口（源文件清单的唯一权威来源）
+│   ├── CMakePresets.json         # CMake 预设（VS / 命令行通用）
+│   └── Dockerfile                # 多阶段构建：CMake 构建 + 直接运行
+├── docker-compose.yml            # Docker Compose 配置（含业务参数）
+├── .github/workflows/ci.yml      # GitHub Actions CI
 ├── .gitignore                    # Git 忽略文件
-├── README.md                     # 项目说明
-└── 轨迹/
-    └── label-01035.md            # 开发轨迹记录
+└── README.md                     # 项目说明
 ```
 
 ---
@@ -114,6 +144,8 @@ g++ -std=c++17 -I./src -o parking_system src/main.cpp src/ParkingLot.cpp src/Par
 ## 技术栈
 
 - **语言**：C++ 17
-- **编译器**：GCC 13 / MSVC (Visual Studio 2022)
+- **构建系统**：CMake 3.16+
+- **编译器**：GCC 13 / Clang / MSVC (Visual Studio 2022)
 - **容器化**：Docker + Docker Compose
+- **CI**：GitHub Actions（Linux + Windows + Docker）
 - **跨平台**：支持 Windows / Linux / macOS，支持 ARM 和 X86 架构

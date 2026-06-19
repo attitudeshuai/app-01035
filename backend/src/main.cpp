@@ -6,9 +6,40 @@
 
 #include <iostream>
 #include <cstdlib>
+#include <string>
 #include "ParkingLot.h"
 
 using namespace std;
+
+// 从环境变量读取整型配置，缺省或非法值时返回默认值
+static int getEnvInt(const char* name, int defaultValue) {
+    const char* value = std::getenv(name);
+    if (value == nullptr || *value == '\0') {
+        return defaultValue;
+    }
+    try {
+        int parsed = std::stoi(value);
+        if (parsed <= 0) return defaultValue;
+        return parsed;
+    } catch (...) {
+        return defaultValue;
+    }
+}
+
+// 从环境变量读取浮点型配置，缺省或非法值时返回默认值
+static double getEnvDouble(const char* name, double defaultValue) {
+    const char* value = std::getenv(name);
+    if (value == nullptr || *value == '\0') {
+        return defaultValue;
+    }
+    try {
+        double parsed = std::stod(value);
+        if (parsed < 0.0) return defaultValue;
+        return parsed;
+    } catch (...) {
+        return defaultValue;
+    }
+}
 
 // 跨平台清屏
 void clearScreen() {
@@ -47,7 +78,11 @@ void showMenu() {
 }
 
 int main() {
-    ParkingLot parkingLot(100, 5.0);  // 100个车位，每小时5元
+    // 业务参数支持通过环境变量覆盖，便于在容器/CI 中无需改代码即可调整
+    int capacity = getEnvInt("PARKING_CAPACITY", 100);
+    double feePerHour = getEnvDouble("PARKING_FEE_PER_HOUR", 5.0);
+
+    ParkingLot parkingLot(capacity, feePerHour);
     char choice;
 
     while (true) {

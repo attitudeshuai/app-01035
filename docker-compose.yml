@@ -3,7 +3,14 @@ services:
     build:
       context: ./backend
       dockerfile: Dockerfile
+    image: parking-system:latest
     container_name: parking-system
+    # 业务参数：在此处集中配置，无需改代码
+    environment:
+      PARKING_CAPACITY: "100"
+      PARKING_FEE_PER_HOUR: "5.0"
+      TZ: Asia/Shanghai
+    # 控制台交互所需
     stdin_open: true
     tty: true
     restart: "no"

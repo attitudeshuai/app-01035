@@ -1,0 +1,8 @@
+build/
+*.sln
+*.vcxproj
+*.vcxproj.filters
+*.user
+*.vcxproj.user
+.DS_Store
+Thumbs.db

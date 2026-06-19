@@ -1,65 +1,71 @@
 # 停车场管理系统
 
-## How to Run
+## 快速开始
 
-### 方式一：Visual Studio 2022 运行（推荐）
-
-1. 双击 `backend/ParkingSystem.sln` 打开解决方案
-2. 按 F5 运行（或 Ctrl+F5 无调试运行）
-
-### 方式二：Docker 运行
+### 方式一：Docker Compose（推荐）
 
 ```bash
-# 构建并启动
-docker-compose up --build -d
+# 构建镜像并启动容器（程序自动运行，直接进入交互界面）
+docker compose up --build
 
-# 进入交互式终端运行程序
-docker exec -it parking-system ./parking_system
+# 后台运行（构建完成后在后台启动）
+docker compose up --build -d
+# 附着到后台容器进行交互
+docker attach parking-system
 
-# 停止容器
-docker-compose down
+# 自定义配置（通过环境变量）
+PARKING_CAPACITY=200 PARKING_FEE_PER_HOUR=8 docker compose up --build
+
+# 停止并删除容器
+docker compose down
 ```
 
-### 方式三：命令行编译运行
+容器启动后程序会直接运行，无需手动 `docker exec` 进入执行。
 
+### 方式二：本地 CMake 编译
+
+需要提前安装 CMake（>=3.16）和 C++17 编译器（GCC/Clang/MSVC）。
+
+**Linux / macOS / Windows (MinGW):**
 ```bash
-# Windows (MinGW)
 cd backend
-g++ -std=c++17 -I./src -o parking_system.exe src/main.cpp src/ParkingLot.cpp src/ParkingLot_Sort.cpp src/ParkingLot_Search.cpp
-parking_system.exe
-
-# Linux / macOS
-cd backend
-g++ -std=c++17 -I./src -o parking_system src/main.cpp src/ParkingLot.cpp src/ParkingLot_Sort.cpp src/ParkingLot_Search.cpp
-./parking_system
+cmake -B build -S . -DCMAKE_BUILD_TYPE=Release
+cmake --build build -j
+./build/parking_system        # Linux/macOS
+.\build\parking_system.exe    # Windows
 ```
 
-## Services
+**Windows (Visual Studio):**
+```bash
+cd backend
+cmake -B build -S .
+cmake --build build --config Release
+.\build\Release\parking_system.exe
+```
 
-| 服务 | 说明 | 端口 |
-|------|------|------|
-| backend | C++ 停车场管理系统 | 控制台应用 |
+也可以直接双击 `backend/ParkingSystem.sln` 用 Visual Studio 2022 打开，按 F5 运行。
 
-## 测试账号
+## 配置说明
 
-本系统为控制台应用，无需登录账号。
+业务参数通过环境变量配置，无需修改代码重新编译：
 
-启动后输入 `0` 可添加5条测试数据：
+| 环境变量 | 说明 | 默认值 |
+|---------|------|--------|
+| `PARKING_CAPACITY` | 停车场最大车位数量 | 100 |
+| `PARKING_FEE_PER_HOUR` | 每小时停车费率（元） | 5.0 |
+
+也可以在项目根目录创建 `.env` 文件进行配置：
+```
+PARKING_CAPACITY=150
+PARKING_FEE_PER_HOUR=6.0
+```
+
+## 功能使用
+
+启动后输入 `0` 可添加 5 条测试数据：
 - 京A12345、沪B67890、粤C11111、苏D22222、浙E33333
 
-## 题目内容
-
-调用visual stdio 2022 c++   编程序要求设计并实现一个停车场管理系统，即定义一个包含车辆信息（车牌号，进场时间，停车时长，应缴费用）的顺序表，顺序表中的序号可以看作是停车位编号，系统至少包含以下功能： 
-（1）指定车辆数，逐个输入车辆信息； 
-（2）逐个显示车辆管理表中所有车辆的相关信息； 
-（3）给定一个车辆信息，插入到表中指定的位置； 
-（4）删除指定位置的车辆记录，删除时给出车辆的停车时长和应缴费用。 
-（5）统计表中车辆数； 
-（6）利用直接插入排序或者折半插入排序按照车牌号进行排序； 
-（7）利用快速排序按照车牌号进行排序； 
-（8）根据车牌号进行折半查找，要求使用递归算法实现，成功返回此车辆的车牌号和和进场时间； 
-（9）根据车牌号进行折半查找，要求使用非递归算法实现，成功返回此车辆的车牌号和和进场时间。1．建立车辆管理表 
-2．根据要求对车辆进行查找
+按菜单提示输入对应数字选择功能，输入 `q` 退出系统。
 
 ---
 
@@ -80,40 +86,43 @@ g++ -std=c++17 -I./src -o parking_system src/main.cpp src/ParkingLot.cpp src/Par
 | 折半查找（递归） | 二分查找 | O(log n) |
 | 折半查找（非递归） | 二分查找 | O(log n) |
 
-### 收费标准
+### 收费计算
 
-- 默认每小时 5 元
 - 费用 = 停车时长（分钟）/ 60 × 每小时费率
+- 停车时长根据进场时间戳动态计算，实时更新
 
 ---
 
 ## 项目结构
 
 ```
+├── .github/workflows/
+│   └── ci.yml                    # GitHub Actions CI 配置
 ├── backend/
 │   ├── src/
-│   │   ├── main.cpp              # 主程序入口
+│   │   ├── main.cpp              # 主程序入口 & 配置加载
 │   │   ├── Vehicle.h             # 车辆结构体定义
 │   │   ├── ParkingLot.h          # 停车场类声明
 │   │   ├── ParkingLot.cpp        # 停车场类基本操作实现
 │   │   ├── ParkingLot_Sort.cpp   # 排序算法实现
 │   │   └── ParkingLot_Search.cpp # 查找算法实现
+│   ├── CMakeLists.txt            # CMake 构建配置（统一源文件管理）
 │   ├── ParkingSystem.sln         # VS2022 解决方案文件
 │   ├── ParkingSystem.vcxproj     # VS2022 项目文件
 │   ├── ParkingSystem.vcxproj.filters  # VS2022 筛选器文件
-│   └── Dockerfile                # Docker 构建文件
+│   └── Dockerfile                # Docker 多阶段构建
 ├── docker-compose.yml            # Docker Compose 配置
 ├── .gitignore                    # Git 忽略文件
-├── README.md                     # 项目说明
-└── 轨迹/
-    └── label-01035.md            # 开发轨迹记录
+└── README.md                     # 项目说明
 ```
 
 ---
 
 ## 技术栈
 
-- **语言**：C++ 17
-- **编译器**：GCC 13 / MSVC (Visual Studio 2022)
-- **容器化**：Docker + Docker Compose
+- **语言**：C++17
+- **构建系统**：CMake（>=3.16），同时保留 Visual Studio 工程支持
+- **编译器**：GCC 13 / Clang / MSVC (Visual Studio 2022)
+- **容器化**：Docker + Docker Compose，多阶段构建静态链接
+- **CI/CD**：GitHub Actions
 - **跨平台**：支持 Windows / Linux / macOS，支持 ARM 和 X86 架构

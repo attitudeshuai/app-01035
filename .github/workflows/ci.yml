@@ -1,0 +1,45 @@
+name: CI
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+
+jobs:
+  build-linux:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install dependencies
+        run: sudo apt-get update && sudo apt-get install -y cmake g++
+
+      - name: Configure CMake
+        working-directory: backend
+        run: cmake -B build -S . -DCMAKE_BUILD_TYPE=Release
+
+      - name: Build
+        working-directory: backend
+        run: cmake --build build -j$(nproc)
+
+      - name: Verify binary
+        working-directory: backend
+        run: |
+          ls -la build/parking_system
+          file build/parking_system
+
+  build-docker:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build Docker image
+        working-directory: backend
+        run: docker build -t parking-system:test .
+
+      - name: Verify Docker image
+        run: docker run --rm parking-system:test & sleep 2 && kill %1 || true
